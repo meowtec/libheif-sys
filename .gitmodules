@@ -1,0 +1,12 @@
+[submodule "libheif"]
+	path = libheif
+	url = https://github.com/strukturag/libheif.git
+[submodule "libde265"]
+	path = libde265
+	url = https://github.com/strukturag/libde265.git
+[submodule "x265"]
+	path = x265
+	url = https://github.com/videolan/x265.git
+[submodule "libwebp"]
+	path = libwebp
+	url = https://chromium.googlesource.com/webm/libwebp
