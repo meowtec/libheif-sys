@@ -1,5 +1,31 @@
 use std::path::PathBuf;
 
+const PKG_CONFIG_PATH: &str = "PKG_CONFIG_PATH";
+
+fn probe_pkg_config_in(name: &str, dir: &str) -> pkg_config::Library {
+    // store original PKG_CONFIG_PATH
+    let env_pkg_config_path = std::env::var(PKG_CONFIG_PATH);
+
+    std::env::set_var(PKG_CONFIG_PATH, dir);
+
+    let library = pkg_config::Config::new()
+        .statik(true)
+        .probe(name)
+        .expect(&format!("library `{}` not found", name));
+
+    // restore original PKG_CONFIG_PATH
+    match env_pkg_config_path {
+        Ok(var) => {
+            std::env::set_var(PKG_CONFIG_PATH, var);
+        }
+        Err(_) => {
+            std::env::remove_var(PKG_CONFIG_PATH);
+        }
+    }
+
+    library
+}
+
 fn main() {
     if std::env::var("DOCS_RS").is_ok() {
         // Don't link with libheif in case of building documentation for docs.rs.
@@ -25,23 +51,10 @@ fn main() {
             .define("ENABLE_DECODER", "OFF")
             .build();
 
-        println!(
-            "cargo:rustc-link-search=native={}",
-            libde265_output.join("lib").display()
-        );
-        println!("cargo:rustc-link-lib=static=de265");
-
         let libwebp_output = cmake::Config::new("libwebp")
             .out_dir(out_dir.join("libwebp"))
             .define("BUILD_SHARED_LIBS", "OFF")
-            // .build_target("sharpyuv")
             .build();
-
-        println!(
-            "cargo:rustc-link-search=native={}",
-            libwebp_output.join("lib").display()
-        );
-        println!("cargo:rustc-link-lib=static=sharpyuv");
 
         let x265_output = cmake::Config::new("x265/source")
             .out_dir(out_dir.join("x265"))
@@ -50,9 +63,6 @@ fn main() {
             .define("ENABLE_SHARED", "OFF")
             .define("ENABLE_ENCODER", "OFF")
             .build();
-
-        println!("cargo:rustc-link-search=native={}", x265_output.join("lib").display());
-        println!("cargo:rustc-link-lib=static=x265");
 
         let libheif_output = cmake::Config::new("libheif")
             .out_dir(out_dir.join("libheif"))
@@ -74,19 +84,26 @@ fn main() {
             .define("WITH_EXAMPLES", "OFF")
             .build();
 
-        println!(
-            "cargo:rustc-link-search=native={}",
-            libheif_output.join("lib").display()
+        let library = probe_pkg_config_in(
+            "libheif",
+            [
+                &libde265_output,
+                &x265_output,
+                &libwebp_output,
+                &libheif_output,
+            ]
+            .map(|output| output.join("lib/pkgconfig").to_string_lossy().to_string())
+            .join(":")
+            .as_str(),
         );
-        println!("cargo:rustc-link-lib=static=heif");
 
-        include_dirs = vec![libheif_output, libde265_output, x265_output, libwebp_output]
+        println!("cargo:warnings=library: {:?}", library);
+
+        include_dirs = library
+            .include_paths
             .iter()
-            .map(|dir| dir.join("include").to_string_lossy().to_string())
+            .map(|dir| dir.to_string_lossy().to_string())
             .collect();
-
-        // link c++. (TODO: libstdc++ vs libc++?)
-        println!("cargo:rustc-link-lib=dylib=c++");
     }
 
     // not vendored, should find and link libheif via pkg_config
@@ -114,7 +131,6 @@ fn main() {
             println!("cargo:warning=end probe heif");
 
             pkg_config::Config::new()
-                // .statik(true)
                 .probe("libsharpyuv")
                 .expect("sharpyuv not found");
         }
