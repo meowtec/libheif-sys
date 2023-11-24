@@ -15,6 +15,7 @@ fn main() {
     #[cfg(not(target_os = "windows"))]
     match pkg_config::Config::new()
         .atleast_version("1.16")
+        .statik(cfg!(feature = "static"))
         .probe("libheif")
     {
         Ok(library) => {

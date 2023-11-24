@@ -23,6 +23,9 @@ default = ["use-bindgen"]
 # instead using of pre-generated bindings.rs.
 use-bindgen = ["dep:bindgen"]
 
+# Indicate whether the `--static` flag should be passe to `pkg-config`
+static = []
+
 
 [build-dependencies]
 bindgen = { version = "0.68", optional = true }
