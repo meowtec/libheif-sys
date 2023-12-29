@@ -23,6 +23,8 @@ default = ["use-bindgen", "use-vendor"]
 # instead using of pre-generated bindings.rs.
 use-bindgen = ["dep:bindgen"]
 use-vendor = []
+# by default use kvazaar for encoding
+use-x265 = []
 
 
 [build-dependencies]
@@ -30,6 +32,7 @@ bindgen = { version = "0.69", optional = true }
 pkg-config = "0.3"
 cmake = { version = "0.1" }
 cc = "1.0"
+autotools = "0.2"
 
 [target.'cfg(windows)'.build-dependencies]
 vcpkg = "0.2"
