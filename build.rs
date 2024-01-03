@@ -333,6 +333,7 @@ fn main() {
                 .out_dir(out_dir.join("libde265"))
                 .define("ENABLE_SDL", "OFF")
                 .define("BUILD_SHARED_LIBS", "OFF")
+                .define("CMAKE_BUILD_TYPE", "Release")
                 .define("ENABLE_ENCODER", "OFF")
                 .define("ENABLE_DECODER", "OFF")
                 .build();
@@ -342,6 +343,7 @@ fn main() {
                     cmake::Config::new("libwebp")
                         .out_dir(out_dir.join("libwebp"))
                         .define("BUILD_SHARED_LIBS", "OFF")
+                        .define("CMAKE_BUILD_TYPE", "Release")
                         .build(),
                 )
             } else {
@@ -359,6 +361,7 @@ fn main() {
                 x265.out_dir(out_dir.join("x265"))
                     .define("ENABLE_SDL", "OFF")
                     .define("BUILD_SHARED_LIBS", "OFF")
+                    .define("CMAKE_BUILD_TYPE", "Release")
                     .define("ENABLE_SHARED", "OFF")
                     .define("ENABLE_ENCODER", "OFF");
 
@@ -404,9 +407,9 @@ fn main() {
 
             libheif_config
                 .out_dir(out_dir.join("libheif"))
-                .configure_arg("--preset=release-noplugins")
+                // not use preset because it is available since 3.19
+                // .configure_arg("--preset=release-noplugins")
                 .cxxflag("-Wno-error=uninitialized")
-                .define("BUILD_SHARED_LIBS", "OFF")
                 .define(
                     "CMAKE_PREFIX_PATH",
                     output_paths
@@ -415,29 +418,47 @@ fn main() {
                         .collect::<Vec<_>>()
                         .join(";"),
                 )
-                // they are need for emscripten build
+                .define("BUILD_SHARED_LIBS", "OFF")
+                .define("CMAKE_BUILD_TYPE", "Release")
+                // required for emscripten build
                 .define("LIBDE265_INCLUDE_DIR", libde265_output.join("include"))
                 .define("LIBDE265_LIBRARY", "-de265")
 
                 // options
                 .define("WITH_AOM_DECODER", "OFF")
                 .define("WITH_AOM_ENCODER", "OFF")
+                .define("WITH_DAV1D", "OFF")
+                .define("WITH_RAV1E", "OFF")
+                .define("WITH_SvtEnc", "OFF")
                 .define("WITH_JPEG_DECODER", "OFF")
                 .define("WITH_JPEG_ENCODER", "OFF")
+                .define("WITH_UNCOMPRESSED_CODEC", "OFF")
+                .define("WITH_OpenJPEG_DECODER", "OFF")
+                .define("WITH_OpenJPEG_ENCODER", "OFF")
+                .define("WITH_FFMPEG_DECODER", "OFF")
+                .define("BUILD_TESTING", "OFF")
+                .define("WITH_DEFLATE_HEADER_COMPRESSION", "OFF")
+                .define("WITH_LIBSHARPYUV", "OFF")
                 .define("WITH_EXAMPLES", "OFF")
-                .define("WITH_DEFLATE_HEADER_COMPRESSION", "OFF");
+                .define("WITH_FUZZERS", "OFF")
+                .define("ENABLE_PLUGIN_LOADING", "OFF")
+                .define("WITH_GDK_PIXBUF", "OFF")
+                .define("WITH_DEFLATE_HEADER_COMPRESSION", "OFF")
+                .define("WITH_REDUCED_VISIBILITY", "ON")
+                .define("WITH_LIBDE265", "ON");
 
             if let Some(ref x265_output) = x265_output {
                 libheif_config
+                    // required for emscripten build
                     .define("X265_INCLUDE_DIR", x265_output.join("include"))
                     .define("X265_LIBRARY", "-x265")
                     .define("WITH_X265", "ON")
-                    .define("WITH_KVAZAAR", "OFF")
-                    .define("WITH_KVAZAAR_PLUGIN", "OFF");
+                    .define("WITH_KVAZAAR", "OFF");
             }
 
             if let Some(ref kvaazar_output) = kvazaar_output {
                 libheif_config
+                    // required for emscripten build
                     .define("KVAZAAR_INCLUDE_DIR", kvaazar_output.join("include"))
                     .define("KVAZAAR_LIBRARY", "-kvazaar")
                     .define("WITH_X265", "OFF")
@@ -450,8 +471,6 @@ fn main() {
             }
 
             let output = libheif_config.build();
-
-            println!("cargo:warning=output: {:?}", output);
 
             include_dirs.push(output.join("include").to_string_lossy().to_string());
 
