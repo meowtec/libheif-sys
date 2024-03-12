@@ -29,57 +29,7 @@ fn main() {
     // build vendored library using cmake
     // #[cfg(feature = "use-vendor")]
     {
-        // cmake & pkg_config have some problem when target to wasm
-        if is_wasm && false {
-            let libde265_sources = vec![
-                "alloc_pool.cc",
-                "bitstream.cc",
-                "cabac.cc",
-                "configparam.cc",
-                "contextmodel.cc",
-                "de265.cc",
-                "deblock.cc",
-                "decctx.cc",
-                "dpb.cc",
-                "en265.cc",
-                "fallback-dct.cc",
-                "fallback-motion.cc",
-                "fallback.cc",
-                "image-io.cc",
-                "image.cc",
-                "intrapred.cc",
-                "md5.cc",
-                "motion.cc",
-                "nal-parser.cc",
-                "nal.cc",
-                "pps.cc",
-                "quality.cc",
-                "refpic.cc",
-                "sao.cc",
-                "scan.cc",
-                "sei.cc",
-                "slice.cc",
-                "sps.cc",
-                "threads.cc",
-                "transform.cc",
-                "util.cc",
-                "visualize.cc",
-                "vps.cc",
-                "vui.cc",
-            ];
-
-            cc::Build::new()
-                .warnings(false)
-                .files(
-                    libde265_sources
-                        .iter()
-                        .map(|s| format!("libde265/libde265/{}", s)),
-                )
-                .include("libde265")
-                .include("libde265/extra")
-                .define("HAVE_POSIX_MEMALIGN", "1")
-                .compile("de265");
-
+        fn cc_build_kvazaar() {
             let kvazaar_sources = vec![
                 "bitstream.c",
                 "cabac.c",
@@ -154,82 +104,142 @@ fn main() {
                 .files(kvazaar_sources.iter().map(|s| format!("kvazaar/src/{}", s)))
                 .include("kvazaar/src")
                 .compile("kvazaar");
+        }
 
-            let x265_sources = vec![
-                "common/primitives.cpp",
-                "common/pixel.cpp",
-                "common/dct.cpp",
-                "common/lowpassdct.cpp",
-                "common/ipfilter.cpp",
-                "common/intrapred.cpp",
-                "common/loopfilter.cpp",
-                "common/constants.cpp",
-                "common/cpu.cpp",
-                "common/version.cpp",
-                "common/threading.cpp",
-                "common/threadpool.cpp",
-                "common/wavefront.cpp",
-                "common/md5.cpp",
-                "common/bitstream.cpp",
-                "common/yuv.cpp",
-                "common/shortyuv.cpp",
-                "common/picyuv.cpp",
-                "common/common.cpp",
-                "common/param.cpp",
-                "common/frame.cpp",
-                "common/framedata.cpp",
-                "common/cudata.cpp",
-                "common/slice.cpp",
-                "common/lowres.cpp",
-                "common/piclist.cpp",
-                "common/predict.cpp",
-                "common/scalinglist.cpp",
-                "common/quant.cpp",
-                "common/deblock.cpp",
-                "common/scaler.cpp",
-                "encoder/analysis.cpp",
-                "encoder/search.cpp",
-                "encoder/bitcost.cpp",
-                "encoder/motion.cpp",
-                "encoder/slicetype.cpp",
-                "encoder/frameencoder.cpp",
-                "encoder/framefilter.cpp",
-                "encoder/level.cpp",
-                "encoder/nal.cpp",
-                "encoder/sei.cpp",
-                "encoder/sao.cpp",
-                "encoder/entropy.cpp",
-                "encoder/dpb.cpp",
-                "encoder/ratecontrol.cpp",
-                "encoder/reference.cpp",
-                "encoder/encoder.cpp",
-                "encoder/api.cpp",
-                "encoder/weightPrediction.cpp",
+        // cmake & pkg_config have some problem when target to wasm
+        if is_wasm && false {
+            let libde265_sources = vec![
+                "alloc_pool.cc",
+                "bitstream.cc",
+                "cabac.cc",
+                "configparam.cc",
+                "contextmodel.cc",
+                "de265.cc",
+                "deblock.cc",
+                "decctx.cc",
+                "dpb.cc",
+                "en265.cc",
+                "fallback-dct.cc",
+                "fallback-motion.cc",
+                "fallback.cc",
+                "image-io.cc",
+                "image.cc",
+                "intrapred.cc",
+                "md5.cc",
+                "motion.cc",
+                "nal-parser.cc",
+                "nal.cc",
+                "pps.cc",
+                "quality.cc",
+                "refpic.cc",
+                "sao.cc",
+                "scan.cc",
+                "sei.cc",
+                "slice.cc",
+                "sps.cc",
+                "threads.cc",
+                "transform.cc",
+                "util.cc",
+                "visualize.cc",
+                "vps.cc",
+                "vui.cc",
             ];
-
-            let x265_config_path = out_dir.join("x265/x265_config.h");
-            write_file(
-                &x265_config_path,
-                &std::fs::read_to_string("x265/source/x265_config.h.in")
-                    .unwrap()
-                    .replace("${X265_BUILD}", "198"),
-            );
 
             cc::Build::new()
                 .warnings(false)
-                .std("c++11")
-                .define("EXPORT_C_API", "1")
-                .define("HAVE_STRTOK_R", "1")
-                .define("X265_NS", "x265")
-                // NOT support HIGH_BIT_DEPTH
-                .define("HIGH_BIT_DEPTH", "0")
-                .define("X265_DEPTH", "8")
-                .files(x265_sources.iter().map(|s| format!("x265/source/{}", s)))
-                .include(out_dir.join("x265"))
-                .include("x265/source")
-                .include("x265/source/common")
-                .include("x265/source/encoder")
-                .compile("x265");
+                .files(
+                    libde265_sources
+                        .iter()
+                        .map(|s| format!("libde265/libde265/{}", s)),
+                )
+                .include("libde265")
+                .include("libde265/extra")
+                .define("HAVE_POSIX_MEMALIGN", "1")
+                .compile("de265");
+
+            #[cfg(feature = "use-x265")]
+            {
+                let x265_sources = vec![
+                    "common/primitives.cpp",
+                    "common/pixel.cpp",
+                    "common/dct.cpp",
+                    "common/lowpassdct.cpp",
+                    "common/ipfilter.cpp",
+                    "common/intrapred.cpp",
+                    "common/loopfilter.cpp",
+                    "common/constants.cpp",
+                    "common/cpu.cpp",
+                    "common/version.cpp",
+                    "common/threading.cpp",
+                    "common/threadpool.cpp",
+                    "common/wavefront.cpp",
+                    "common/md5.cpp",
+                    "common/bitstream.cpp",
+                    "common/yuv.cpp",
+                    "common/shortyuv.cpp",
+                    "common/picyuv.cpp",
+                    "common/common.cpp",
+                    "common/param.cpp",
+                    "common/frame.cpp",
+                    "common/framedata.cpp",
+                    "common/cudata.cpp",
+                    "common/slice.cpp",
+                    "common/lowres.cpp",
+                    "common/piclist.cpp",
+                    "common/predict.cpp",
+                    "common/scalinglist.cpp",
+                    "common/quant.cpp",
+                    "common/deblock.cpp",
+                    "common/scaler.cpp",
+                    "encoder/analysis.cpp",
+                    "encoder/search.cpp",
+                    "encoder/bitcost.cpp",
+                    "encoder/motion.cpp",
+                    "encoder/slicetype.cpp",
+                    "encoder/frameencoder.cpp",
+                    "encoder/framefilter.cpp",
+                    "encoder/level.cpp",
+                    "encoder/nal.cpp",
+                    "encoder/sei.cpp",
+                    "encoder/sao.cpp",
+                    "encoder/entropy.cpp",
+                    "encoder/dpb.cpp",
+                    "encoder/ratecontrol.cpp",
+                    "encoder/reference.cpp",
+                    "encoder/encoder.cpp",
+                    "encoder/api.cpp",
+                    "encoder/weightPrediction.cpp",
+                ];
+
+                let x265_config_path = out_dir.join("x265/x265_config.h");
+                write_file(
+                    &x265_config_path,
+                    &std::fs::read_to_string("x265/source/x265_config.h.in")
+                        .unwrap()
+                        .replace("${X265_BUILD}", "198"),
+                );
+
+                cc::Build::new()
+                    .warnings(false)
+                    .std("c++11")
+                    .define("EXPORT_C_API", "1")
+                    .define("HAVE_STRTOK_R", "1")
+                    .define("X265_NS", "x265")
+                    // NOT support HIGH_BIT_DEPTH
+                    .define("HIGH_BIT_DEPTH", "0")
+                    .define("X265_DEPTH", "8")
+                    .files(x265_sources.iter().map(|s| format!("x265/source/{}", s)))
+                    .include(out_dir.join("x265"))
+                    .include("x265/source")
+                    .include("x265/source/common")
+                    .include("x265/source/encoder")
+                    .compile("x265");
+            }
+
+            #[cfg(not(feature = "use-x265"))]
+            {
+                cc_build_kvazaar();
+            }
 
             let libheif_sources = vec![
                 "bitstream.cc",
@@ -378,19 +388,21 @@ fn main() {
 
             #[cfg(not(feature = "use-x265"))]
             {
-                let mut kvazaar = autotools::Config::new("kvazaar");
-                let kvazaar_out_dir = out_dir.join("kvazaar");
-                fs::create_dir_all(&kvazaar_out_dir).unwrap();
+                // let mut kvazaar = autotools::Config::new("kvazaar");
+                // let kvazaar_out_dir = out_dir.join("kvazaar");
+                // fs::create_dir_all(&kvazaar_out_dir).unwrap();
 
-                kvazaar
-                    .out_dir(kvazaar_out_dir)
-                    .reconf("-if")
-                    .enable_static()
-                    .disable_shared();
-                if is_wasm {
-                    kvazaar.disable("asm", None);
-                }
-                kvazaar_output = Some(kvazaar.build());
+                // kvazaar
+                //     .out_dir(kvazaar_out_dir)
+                //     .reconf("-if")
+                //     .enable_static()
+                //     .disable_shared();
+                // if is_wasm {
+                //     kvazaar.disable("asm", None);
+                // }
+                // kvazaar_output = Some(kvazaar.build());
+
+                cc_build_kvazaar();
             }
 
             let output_paths = [
@@ -423,7 +435,6 @@ fn main() {
                 // required for emscripten build
                 .define("LIBDE265_INCLUDE_DIR", libde265_output.join("include"))
                 .define("LIBDE265_LIBRARY", "-de265")
-
                 // options
                 .define("WITH_AOM_DECODER", "OFF")
                 .define("WITH_AOM_ENCODER", "OFF")
