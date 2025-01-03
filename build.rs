@@ -29,83 +29,6 @@ fn main() {
     // build vendored library using cmake
     // #[cfg(feature = "use-vendor")]
     {
-        fn cc_build_kvazaar() {
-            let kvazaar_sources = vec![
-                "bitstream.c",
-                "cabac.c",
-                "cfg.c",
-                "checkpoint.c",
-                "constraint.c",
-                "context.c",
-                "cu.c",
-                "encode_coding_tree.c",
-                "encoder.c",
-                "encoder_state-bitstream.c",
-                "encoder_state-ctors_dtors.c",
-                "encoder_state-geometry.c",
-                "encoderstate.c",
-                "fast_coeff_cost.c",
-                "filter.c",
-                "image.c",
-                "imagelist.c",
-                "input_frame_buffer.c",
-                "inter.c",
-                "intra.c",
-                "kvazaar.c",
-                "ml_classifier_intra_depth_pred.c",
-                "ml_intra_cu_depth_pred.c",
-                "nal.c",
-                "rate_control.c",
-                "rdo.c",
-                "sao.c",
-                "scalinglist.c",
-                "search.c",
-                "search_inter.c",
-                "search_intra.c",
-                "strategyselector.c",
-                "tables.c",
-                "threadqueue.c",
-                "transform.c",
-                "videoframe.c",
-                "yuv_io.c",
-                "strategies/strategies-dct.c",
-                "strategies/strategies-intra.c",
-                "strategies/strategies-nal.c",
-                "strategies/strategies-quant.c",
-                "strategies/strategies-encode.c",
-                "strategies/strategies-ipol.c",
-                "strategies/strategies-picture.c",
-                "strategies/strategies-sao.c",
-                "strategies/avx2/dct-avx2.c",
-                "strategies/avx2/encode_coding_tree-avx2.c",
-                "strategies/avx2/intra-avx2.c",
-                "strategies/avx2/ipol-avx2.c",
-                "strategies/avx2/picture-avx2.c",
-                "strategies/avx2/quant-avx2.c",
-                "strategies/avx2/sao-avx2.c",
-                "strategies/altivec/picture-altivec.c",
-                "strategies/generic/dct-generic.c",
-                "strategies/generic/encode_coding_tree-generic.c",
-                "strategies/generic/intra-generic.c",
-                "strategies/generic/ipol-generic.c",
-                "strategies/generic/nal-generic.c",
-                "strategies/generic/picture-generic.c",
-                "strategies/generic/quant-generic.c",
-                "strategies/generic/sao-generic.c",
-                "strategies/sse2/picture-sse2.c",
-                "strategies/sse41/picture-sse41.c",
-                "strategies/x86_asm/picture-x86-asm.c",
-                "extras/getopt.c",
-                "extras/libmd5.c",
-            ];
-
-            cc::Build::new()
-                .warnings(false)
-                .files(kvazaar_sources.iter().map(|s| format!("kvazaar/src/{}", s)))
-                .include("kvazaar/src")
-                .compile("kvazaar");
-        }
-
         // cmake & pkg_config have some problem when target to wasm
         if is_wasm && false {
             let libde265_sources = vec![
@@ -234,11 +157,6 @@ fn main() {
                     .include("x265/source/common")
                     .include("x265/source/encoder")
                     .compile("x265");
-            }
-
-            #[cfg(not(feature = "use-x265"))]
-            {
-                cc_build_kvazaar();
             }
 
             let libheif_sources = vec![
@@ -388,21 +306,10 @@ fn main() {
 
             #[cfg(not(feature = "use-x265"))]
             {
-                // let mut kvazaar = autotools::Config::new("kvazaar");
-                // let kvazaar_out_dir = out_dir.join("kvazaar");
-                // fs::create_dir_all(&kvazaar_out_dir).unwrap();
-
-                // kvazaar
-                //     .out_dir(kvazaar_out_dir)
-                //     .reconf("-if")
-                //     .enable_static()
-                //     .disable_shared();
-                // if is_wasm {
-                //     kvazaar.disable("asm", None);
-                // }
-                // kvazaar_output = Some(kvazaar.build());
-
-                cc_build_kvazaar();
+                kvazaar_output = Some(cmake::Config::new("kvazaar")
+                    .out_dir(out_dir.join("kvazaar"))
+                    .define("BUILD_TESTS", "OFF")
+                    .build());
             }
 
             let output_paths = [
@@ -421,7 +328,8 @@ fn main() {
                 .out_dir(out_dir.join("libheif"))
                 // not use preset because it is available since 3.19
                 // .configure_arg("--preset=release-noplugins")
-                .cxxflag("-Wno-error=uninitialized")
+                // MSVC does not support
+                // .cxxflag("-Wno-error=uninitialized")
                 .define(
                     "CMAKE_PREFIX_PATH",
                     output_paths
@@ -494,7 +402,7 @@ fn main() {
                     .iter()
                     .map(|output| output.join("lib/pkgconfig").to_string_lossy().to_string())
                     .collect::<Vec<_>>()
-                    .join(":")
+                    .join(";")
                     .as_str(),
             );
 
